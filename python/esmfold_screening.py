@@ -2,7 +2,7 @@ import os
 import argparse
 import torch
 import string
-from Bio import FastaIO
+from Bio.SeqIO import FastaIO
 
 
 def clean_sequence(seq):
