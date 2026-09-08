@@ -2,15 +2,15 @@
 #SBATCH --job-name=esm_bins
 #SBATCH --account=def-moffettp
 #SBATCH --time=07:00:00
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=8
 #SBATCH --output=/home/jflucier/links/scratch/programs/20260825_folds_arabidopsis/bin_testset/logs_bin_%A_%a.out
 
 # We define 6 array tasks matching index 1 to 6
 #SBATCH --array=1-6
 
 # Set a uniform resource ceiling that safely covers the largest 2501-5000aa bins
-#SBATCH --gres=mig:h100_3g.40gb:1
-#SBATCH --mem=32G
+#SBATCH --gpus=h100_3g.40gb:1
+#SBATCH --mem=62G
 
 # Define the absolute directory mapping based on your path
 DATA_DIR="/home/jflucier/links/scratch/programs/20260825_folds_arabidopsis/bin_testset"
@@ -20,12 +20,12 @@ MY_BAIT="MTTSRFATFDIESETGLTPGAYPAPLPTLEQQLHDRNAILAAIPGLARTKLDAPTLKRAFANFLLTLGMVG
 
 # Map the Slurm Array Task ID to specific fasta bins and tailor the required MIG GPU profile
 case $SLURM_ARRAY_TASK_ID in
-    1) FASTA="bin_1-500aa.testset.fasta";    MIG_PROFILE="mig:h100_1g.10gb:1"; MEM_REQ="16G" ;;
-    2) FASTA="bin_501-1000aa.testset.fasta";  MIG_PROFILE="mig:h100_2g.20gb:1"; MEM_REQ="24G" ;;
-    3) FASTA="bin_1001-1500aa.testset.fasta"; MIG_PROFILE="mig:h100_2g.20gb:1"; MEM_REQ="32G" ;;
-    4) FASTA="bin_1501-2000aa.testset.fasta"; MIG_PROFILE="mig:h100_2g.20gb:1"; MEM_REQ="32G" ;;
-    5) FASTA="bin_2001-2500aa.testset.fasta"; MIG_PROFILE="mig:h100_3g.40gb:1"; MEM_REQ="32G" ;;
-    6) FASTA="bin_2501-5000aa.testset.fasta"; MIG_PROFILE="mig:h100_3g.40gb:1"; MEM_REQ="32G" ;;
+    1) FASTA="bin_1-500aa.testset.fasta" ;;
+    2) FASTA="bin_501-1000aa.testset.fasta" ;;
+    3) FASTA="bin_1001-1500aa.testset.fasta" ;;
+    4) FASTA="bin_1501-2000aa.testset.fasta" ;;
+    5) FASTA="bin_2001-2500aa.testset.fasta" ;;
+    6) FASTA="bin_2501-5000aa.testset.fasta" ;;
 esac
 
 FULL_FASTA_PATH="${DATA_DIR}/${FASTA}"
