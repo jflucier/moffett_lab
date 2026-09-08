@@ -3,7 +3,7 @@
 #SBATCH --account=def-moffettp
 #SBATCH --time=07:00:00
 #SBATCH --cpus-per-task=8
-#SBATCH --output=/home/jflucier/links/scratch/programs/20260825_folds_arabidopsis/bin_testset/logs_bin_%A_%a.out
+#SBATCH --output=/home/jflucier/links/scratch/20260825_folds_arabidopsis/bin_testset/logs_bin_%A_%a.out
 
 # We define 6 array tasks matching index 1 to 6
 #SBATCH --array=1-6
@@ -13,7 +13,7 @@
 #SBATCH --mem=62G
 
 # Define the absolute directory mapping based on your path
-DATA_DIR="/home/jflucier/links/scratch/programs/20260825_folds_arabidopsis/bin_testset"
+DATA_DIR="/home/jflucier/links/scratch/20260825_folds_arabidopsis/bin_testset"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PYTHON_SCRIPT="${SCRIPT_DIR}/../python/esmfold_screening.py"
 MY_BAIT="MTTSRFATFDIESETGLTPGAYPAPLPTLEQQLHDRNAILAAIPGLARTKLDAPTLKRAFANFLLTLGMVGTTSKGSYEELIIPPVKGMGSSTGFRARELVQIITSSPAPPGFDGNQTLRQFARPYAPQVQNMIAQGKFKTNLYDKYGKSVGAPPHVCIDFNDAMDLQMFHSTAEFESAHKVRELAIAEAAARDNAPRPAANPRAAKPVIGQTAPAFHSGDAAKQSGGQPVNIKPSLAQSAGFDSHRPPPETPPRASTPSSQKSGQSGQTIIQPPASHGILSSALGSHKSTPHASPQQTPKK"
