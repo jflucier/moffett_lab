@@ -1,6 +1,6 @@
 import os
 import argparse
-from Bio import FastaIO
+from Bio.SeqIO import FastaIO
 
 
 def main():
