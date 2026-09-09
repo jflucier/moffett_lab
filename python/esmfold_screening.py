@@ -33,6 +33,12 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
 
     print("Loading ESMFold on H100 GPU...")
+    original_esm2_loader = esm.pretrained.esm2_t36_3B_UR50D
+    esm.pretrained.esm2_t36_3B_UR50D = lambda: esm.esmfold.v1.misc.load_esm_model(
+        esm_type="esm2_t36_3B_UR50D",
+        preload_weights=False  # <--- CRITICAL: Stops the internet download trigger
+    )
+    
     weight_path = "/home/jflucier/links/scratch/programs/esm/esmfold_3B_v1.pt"
     model_data = torch.load(weight_path, map_location="cpu", weights_only=False)
 
