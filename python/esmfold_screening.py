@@ -55,7 +55,7 @@ def main():
         model = ESMFold(esmfold_config=cfg)
 
         # Load the trunk weights over the compiled layout
-        model.load_state_dict(trunk_data["model"])
+        model.load_state_dict(trunk_data["model"], strict=False)
 
     finally:
         # Revert torch.load back to its default behavior to protect downstream libraries
