@@ -3,7 +3,7 @@ import argparse
 import torch
 import string
 from Bio.SeqIO import FastaIO
-
+import esm
 
 def clean_sequence(seq):
     """Removes non-standard amino acids that crash ESMFold"""
@@ -33,7 +33,12 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
 
     print("Loading ESMFold on H100 GPU...")
-    model = torch.hub.load("local", "/home/jflucier/links/scratch/programs/esm/esmfold_3B_v1.pt")
+    model, alphabet = esm.pretrained.load_model_and_alphabet(
+        "/home/jflucier/links/scratch/programs/esm/esmfold_3B_v1.pt",
+        map_location="cpu"
+    )
+
+    # Push the fully unpacked model to your H100 MIG slice
     model = model.eval().cuda()
 
     # Optimize matrix operations specifically for the H100 SXM5 architecture
