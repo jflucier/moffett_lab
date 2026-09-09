@@ -39,17 +39,27 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
 
     print("Loading ESMFold on H100 GPU...")
-    esm.pretrained.esm2_t36_3B_UR50D = lambda: esm.pretrained.load_model_and_alphabet(ESM2_BACKBONE_PATH)
 
-    # Read the structural trunk properties
-    trunk_data = original_torch_load(TRUNK_WEIGHTS_PATH, map_location="cpu", weights_only=False)
-    cfg = trunk_data["cfg"]["model"]
+    original_torch_load = torch.load
+    torch.load = partial(original_torch_load, weights_only=False)
 
-    # Instantiate the class (will now assemble completely from disk cache)
-    model = ESMFold(esmfold_config=cfg)
+    try:
+        # Intercept fair-esm's downloader registry and inject your local file
+        esm.pretrained.esm2_t36_3B_UR50D = lambda: esm.pretrained.load_model_and_alphabet(ESM2_BACKBONE_PATH)
 
-    # Load the trunk weights over the compiled layout
-    model.load_state_dict(trunk_data["model"])
+        # Read the structural trunk properties using the safe global copy
+        trunk_data = original_torch_load(TRUNK_WEIGHTS_PATH, map_location="cpu", weights_only=False)
+        cfg = trunk_data["cfg"]["model"]
+
+        # Instantiate the class (will now assemble completely from disk cache)
+        model = ESMFold(esmfold_config=cfg)
+
+        # Load the trunk weights over the compiled layout
+        model.load_state_dict(trunk_data["model"])
+
+    finally:
+        # Revert torch.load back to its default behavior to protect downstream libraries
+        torch.load = original_torch_load
 
     # 5. Push the compiled model cleanly onto your H100 MIG slice
     model = model.eval().cuda()
