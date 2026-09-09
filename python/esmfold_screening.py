@@ -33,7 +33,7 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
 
     print("Loading ESMFold on H100 GPU...")
-    model = torch.hub.load("facebookresearch/esm:main", "esmfold_v1")
+    model = torch.hub.load("local", "/home/jflucier/links/scratch/programs/esm/esmfold_3B_v1.pt")
     model = model.eval().cuda()
 
     # Optimize matrix operations specifically for the H100 SXM5 architecture
