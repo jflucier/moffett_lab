@@ -34,7 +34,7 @@ def main():
 
     print("Loading ESMFold on H100 GPU...")
     weight_path = "/home/jflucier/links/scratch/programs/esm/esmfold_3B_v1.pt"
-    model_data = torch.load(weight_path, map_location="cpu")
+    model_data = torch.load(weight_path, map_location="cpu", weights_only=False)
 
     # 2. Extract the model architecture configurations embedded inside the file
     cfg = model_data["cfg"]["model"]
