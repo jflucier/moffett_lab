@@ -7,9 +7,16 @@ import esm
 from functools import partial
 from esm.esmfold.v1.esmfold import ESMFold
 
+try:
+    import deepspeed
+    if not hasattr(deepspeed.utils, "is_initialized"):
+        # Mock the function to always return False since we are doing pure inference
+        deepspeed.utils.is_initialized = lambda: False
+except (ImportError, AttributeError):
+    pass
+
 ESM2_BACKBONE_PATH = "/home/jflucier/links/scratch/programs/esm/esm2_t36_3B_UR50D.pt"
 TRUNK_WEIGHTS_PATH = "/home/jflucier/links/scratch/programs/esm/esmfold_3B_v1.pt"
-
 
 def clean_sequence(seq):
     """Removes non-standard amino acids that crash ESMFold"""
