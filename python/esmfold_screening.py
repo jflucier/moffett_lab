@@ -3,6 +3,7 @@ import argparse
 import torch
 import string
 from Bio.SeqIO import FastaIO
+import esm
 from esm.esmfold.v1.esmfold import ESMFold
 
 def clean_sequence(seq):
@@ -38,7 +39,7 @@ def main():
         esm_type="esm2_t36_3B_UR50D",
         preload_weights=False  # <--- CRITICAL: Stops the internet download trigger
     )
-    
+
     weight_path = "/home/jflucier/links/scratch/programs/esm/esmfold_3B_v1.pt"
     model_data = torch.load(weight_path, map_location="cpu", weights_only=False)
 
