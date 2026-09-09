@@ -4,7 +4,12 @@ import torch
 import string
 from Bio.SeqIO import FastaIO
 import esm
+from functools import partial
 from esm.esmfold.v1.esmfold import ESMFold
+
+ESM2_BACKBONE_PATH = "/home/jflucier/links/scratch/programs/esm/esm2_t36_3B_UR50D.pt"
+TRUNK_WEIGHTS_PATH = "/home/jflucier/links/scratch/programs/esm/esmfold_3B_v1.pt"
+
 
 def clean_sequence(seq):
     """Removes non-standard amino acids that crash ESMFold"""
@@ -34,26 +39,22 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
 
     print("Loading ESMFold on H100 GPU...")
-    original_esm2_loader = esm.pretrained.esm2_t36_3B_UR50D
-    esm.pretrained.esm2_t36_3B_UR50D = lambda: esm.esmfold.v1.misc.load_esm_model(
-        esm_type="esm2_t36_3B_UR50D",
-        preload_weights=False  # <--- CRITICAL: Stops the internet download trigger
-    )
+    esm.pretrained.esm2_t36_3B_UR50D = lambda: esm.pretrained.load_model_and_alphabet(ESM2_BACKBONE_PATH)
 
-    weight_path = "/home/jflucier/links/scratch/programs/esm/esmfold_3B_v1.pt"
-    model_data = torch.load(weight_path, map_location="cpu", weights_only=False)
+    # Read the structural trunk properties
+    trunk_data = original_torch_load(TRUNK_WEIGHTS_PATH, map_location="cpu", weights_only=False)
+    cfg = trunk_data["cfg"]["model"]
 
-    # 2. Extract the model architecture configurations embedded inside the file
-    cfg = model_data["cfg"]["model"]
-
-    # 3. Instantiate the structural network matrix completely locally
+    # Instantiate the class (will now assemble completely from disk cache)
     model = ESMFold(esmfold_config=cfg)
 
-    # 4. Bind the offline weights to the new architecture shell
-    model.load_state_dict(model_data["model"])
+    # Load the trunk weights over the compiled layout
+    model.load_state_dict(trunk_data["model"])
 
     # 5. Push the compiled model cleanly onto your H100 MIG slice
     model = model.eval().cuda()
+
+    print("ESMFold loaded successfully and mapped to GPU device!")
 
     # Optimize matrix operations specifically for the H100 SXM5 architecture
     torch.set_float32_matmul_precision('high')
