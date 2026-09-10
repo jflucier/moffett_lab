@@ -1,6 +1,6 @@
 import os
 import argparse
-from Bio import FastaIO
+from Bio.SeqIO.FastaIO import SimpleFastaParser
 
 
 def main():
@@ -28,7 +28,7 @@ def main():
         return open(path, "w")
 
     with open(args.fasta, "r") as handle:
-        for title, seq in FastaIO.SimpleFastaParser(handle):
+        for title, seq in SimpleFastaParser(handle):
             if out_fh is None or seq_in_shard >= args.shard_size:
                 if out_fh is not None:
                     out_fh.close()
