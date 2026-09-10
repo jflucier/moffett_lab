@@ -36,7 +36,8 @@ def main():
                 shard_idx += 1
                 seq_in_shard = 0
 
-            out_fh.write(f">{title}\n")
+            cleaned_title = title.replace("|", " ")
+            out_fh.write(f">{cleaned_title}\n")
             for i in range(0, len(seq), 60):
                 out_fh.write(seq[i:i + 60] + "\n")
 
