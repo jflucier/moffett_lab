@@ -20,6 +20,7 @@ MY_BAIT="MTTSRFATFDIESETGLTPGAYPAPLPTLEQQLHDRNAILAAIPGLARTKLDAPTLKRAFANFLLTLGMVG
 CHUNK_ARGS=""
 
 case $SLURM_ARRAY_TASK_ID in
+    1) FASTA="bin_1-500aa.testset.fasta" ;;
     2) FASTA="bin_501-1000aa.testset.fasta";   CHUNK_ARGS="--chunk-size 128" ;;
     3) FASTA="bin_1001-1500aa.testset.fasta";  CHUNK_ARGS="--chunk-size 64"  ;; # Smaller chunk for larger sequences
     4) FASTA="bin_1501-2000aa.testset.fasta";  CHUNK_ARGS="--chunk-size 64"  ;;
