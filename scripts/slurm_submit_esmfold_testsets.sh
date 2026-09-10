@@ -10,6 +10,9 @@
 #SBATCH --gpus=h100_3g.40gb:1
 #SBATCH --mem=62G
 
+export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True,max_split_size_mb:128"
+
+
 # Define the absolute directory mapping based on your path
 DATA_DIR="/home/jflucier/links/scratch/20260825_folds_arabidopsis/bin_testset"
 PYTHON_SCRIPT="/home/jflucier/links/scratch/programs/moffett_lab/python/esmfold_screening.py"
