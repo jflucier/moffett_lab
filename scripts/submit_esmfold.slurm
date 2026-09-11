@@ -2,7 +2,7 @@
 #SBATCH --job-name=esm_bins
 #SBATCH --account=def-moffettp
 #SBATCH --time=24:00:00
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=4
 #SBATCH --output=/home/jflucier/links/scratch/20260825_folds_arabidopsis/arabidopsis_openprot_bins_500aa_v2/logs/esm_bins_%A_%a.out
 #SBATCH --mem=31G
 
