@@ -3,21 +3,18 @@
 #SBATCH --account=def-moffettp
 #SBATCH --time=24:00:00
 #SBATCH --cpus-per-task=8
-#SBATCH --output=/home/jflucier/links/scratch/20260825_folds_arabidopsis/bin_testset/logs_bin_%A_%a.out
-# Set a uniform resource ceiling that safely covers the largest 2501-5000aa bins
-#SBATCH --gpus=h100:1
+#SBATCH --output=/home/jflucier/links/scratch/20260825_folds_arabidopsis/arabidopsis_openprot_bins_500aa_v2/logs/esm_bins_%A_%a.out
 #SBATCH --mem=62G
-
 
 ########
 # To submit use the following call:
-# sbatch submit_esmfold.slurm --array=0-xx --gpus=[H100-1g.10gb|H100-2g.20gb|H100-3g.40gb|h100:1] -i /pth/to/fasta_dir -o /path/to/result_dir -c chunk_size
+# sbatch --array=0-xx --gpus=[H100-1g.10gb|H100-2g.20gb|H100-3g.40gb|h100:1] submit_esmfold.slurm -i /pth/to/fasta_dir -o /path/to/result_dir -c chunk_size
 
 # Define the absolute directory mapping based on your path
 PYTHON_SCRIPT="/home/jflucier/links/scratch/programs/moffett_lab/python/esmfold_screening.py"
 MY_BAIT="MTTSRFATFDIESETGLTPGAYPAPLPTLEQQLHDRNAILAAIPGLARTKLDAPTLKRAFANFLLTLGMVGTTSKGSYEELIIPPVKGMGSSTGFRARELVQIITSSPAPPGFDGNQTLRQFARPYAPQVQNMIAQGKFKTNLYDKYGKSVGAPPHVCIDFNDAMDLQMFHSTAEFESAHKVRELAIAEAAARDNAPRPAANPRAAKPVIGQTAPAFHSGDAAKQSGGQPVNIKPSLAQSAGFDSHRPPPETPPRASTPSSQKSGQSGQTIIQPPASHGILSSALGSHKSTPHASPQQTPKK"
 
-CHUNK_ARGS=""
+CHUNK=""
 FASTA_DIR=""
 RESULTS_DIR=""
 
@@ -28,7 +25,7 @@ while true ; do
     case "$1" in
         -i|--in) FASTA_DIR="$2" ; shift 2 ;;
         -o|--out) RESULTS_DIR="$2" ; shift 2 ;;
-        -c|--chunk) CHUNK_ARGS="$2" ; shift 2 ;;
+        -c|--chunk) CHUNK="$2" ; shift 2 ;;
         --) shift ; break ;;
         *) echo "Invalid Option" ; exit 1 ;;
     esac
@@ -42,11 +39,30 @@ if [ -z "$RESULTS_DIR" ]; then
     RESULTS_DIR="${FASTA_DIR}/esmfold_results"
 fi
 
+if [ -n "$CHUNK" ]; then
+    if [ "$CHUNK" -eq 32 ] || [ "$CHUNK" -eq 64 ] || [ "$CHUNK" -eq 128 ]; then
+        CHUNK_ARGS="--chunk-size $CHUNK"
+    else
+        echo "Error: Invalid chunk size '$CHUNK'. Allowed values are 32, 64, or 128."
+        exit 1
+    fi
+else
+    CHUNK_ARGS=""
+fi
+
 # need to fetch fasta based on $SLURM_ARRAY_INDEX
-#FULL_FASTA_PATH="${DATA_DIR}/${FASTA}"
-FULL_FASTA_PATH=$(ls ${FASTA_DIR}/*.fasta | awk ...)
-RESULTS_DIR="${DATA_DIR}/esmfold_results"
-mkdir -p
+shopt -s nullglob
+FASTA_FILES=($(ls -1 "$FASTA_DIR"/*.fasta | sort))
+
+FULL_FASTA_PATH="${FASTA_FILES[$SLURM_ARRAY_TASK_ID]}"
+
+# Safety check if the target index is out of bounds for the number of files available
+if [ -z "$FULL_FASTA_PATH" ]; then
+    echo "Error: No FASTA file found for Slurm Task ID $SLURM_ARRAY_TASK_ID in $FASTA_DIR"
+    exit 1
+fi
+
+mkdir -p ${RESULTS_DIR}
 
 # Load your cluster runtime environment
 module load StdEnv/2023 python/3.10 cuda/12.2 gcc/12.3
