@@ -8,7 +8,7 @@
 
 ########
 # To submit use the following call:
-# sbatch --array=0-xx --gpus=[H100-1g.10gb|H100-2g.20gb|H100-3g.40gb|h100:1] submit_esmfold.slurm -i /pth/to/fasta_dir -o /path/to/result_dir -c chunk_size
+# sbatch --array=0-xx --gpus=[h100_1g.10gb:1|h100_2g.20gb:1|h100_3g.40gb:1|h100:1] submit_esmfold.slurm -i /pth/to/fasta_dir -o /path/to/result_dir -c chunk_size
 
 # Define the absolute directory mapping based on your path
 PYTHON_SCRIPT="/home/jflucier/links/scratch/programs/moffett_lab/python/esmfold_screening.py"
