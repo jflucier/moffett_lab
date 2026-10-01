@@ -64,6 +64,12 @@ def main():
         # Load the trunk weights over the compiled layout
         model.load_state_dict(trunk_data["model"], strict=False)
 
+        # Optimize the embedding engine only (Bypasses structural degradation)
+        model.esm = model.esm.half()
+
+        # Push the optimized network to your A100 slice
+        model = model.eval().cuda()
+
     finally:
         # Revert torch.load back to its default behavior to protect downstream libraries
         torch.load = original_torch_load
