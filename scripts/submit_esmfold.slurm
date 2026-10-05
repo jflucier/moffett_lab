@@ -73,6 +73,17 @@ export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 echo "Processing Task ID: $SLURM_ARRAY_TASK_ID"
 echo "Target File: $FULL_FASTA_PATH"
 
+# =========================================================================
+# DISTRIBUTED DEADLOCK FIX
+# Unset Slurm group communication variables to force DeepSpeed and PyTorch
+# to run in isolated local single-GPU inference mode rather than training.
+# =========================================================================
+unset RANK
+unset WORLD_SIZE
+unset MASTER_ADDR
+unset MASTER_PORT
+unset LOCAL_RANK
+
 # Execute your python screening script
 python "$PYTHON_SCRIPT" \
     --bait "$MY_BAIT" \
