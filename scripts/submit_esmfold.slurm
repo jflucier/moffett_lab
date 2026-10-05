@@ -10,6 +10,7 @@
 # To submit use the following call:
 # sbatch --array=0-xx --gpus=[h100_1g.10gb:1|h100_2g.20gb:1|h100_3g.40gb:1|h100:1] submit_esmfold.slurm -i /pth/to/fasta_dir -o /path/to/result_dir -c chunk_size
 
+
 # Define the absolute directory mapping based on your path
 PYTHON_SCRIPT="/home/jflucier/links/scratch/programs/moffett_lab/python/esmfold_screening.py"
 MY_BAIT="MTTSRFATFDIESETGLTPGAYPAPLPTLEQQLHDRNAILAAIPGLARTKLDAPTLKRAFANFLLTLGMVGTTSKGSYEELIIPPVKGMGSSTGFRARELVQIITSSPAPPGFDGNQTLRQFARPYAPQVQNMIAQGKFKTNLYDKYGKSVGAPPHVCIDFNDAMDLQMFHSTAEFESAHKVRELAIAEAAARDNAPRPAANPRAAKPVIGQTAPAFHSGDAAKQSGGQPVNIKPSLAQSAGFDSHRPPPETPPRASTPSSQKSGQSGQTIIQPPASHGILSSALGSHKSTPHASPQQTPKK"
@@ -69,6 +70,10 @@ module load StdEnv/2023 python/3.10 cuda/12.2 gcc/12.3
 source /home/jflucier/links/scratch/programs/esm/venv/bin/activate
 
 export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
+
+export TORCH_EXTENSIONS_DIR="/lustre07/scratch/jflucier/programs/esm/cache_task_${SLURM_ARRAY_TASK_ID}"
+mkdir -p "$TORCH_EXTENSIONS_DIR"
+
 # Define parameter variables
 echo "Processing Task ID: $SLURM_ARRAY_TASK_ID"
 echo "Target File: $FULL_FASTA_PATH"

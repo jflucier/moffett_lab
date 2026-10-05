@@ -1,11 +1,26 @@
+import sys
+
+# 1. Start Trace
+print("TRACE: Starting Python execution script...", flush=True)
+
+print("TRACE: Importing standard libraries (os, argparse, torch, string)...", flush=True)
 import os
 import argparse
 import torch
 import string
-from Bio.SeqIO import FastaIO
+
+print("TRACE: Importing Bio.SeqIO.FastaIO...", flush=True)
+from Bio.SeqIO.FastaIO import SimpleFastaParser
+
+print("TRACE: Importing esm and partial...", flush=True)
 import esm
 from functools import partial
+
+print("TRACE: About to import ESMFold (This will trigger OpenFold and DeepSpeed initialization)...", flush=True)
 from esm.esmfold.v1.esmfold import ESMFold
+
+# 2. End Trace
+print("TRACE: All imports completed successfully!", flush=True)
 
 try:
     import deepspeed
