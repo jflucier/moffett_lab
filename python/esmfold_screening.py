@@ -104,7 +104,7 @@ def main():
 
     # Stream through the large proteome file to conserve RAM
     with open(fasta_path, "r") as handle:
-        for record in FastaIO.SimpleFastaParser(handle):
+        for record in SimpleFastaParser(handle):
             header_line = record[0]
             target_seq = clean_sequence(record[1])
 
