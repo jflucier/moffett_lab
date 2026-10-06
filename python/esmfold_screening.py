@@ -19,9 +19,7 @@ from functools import partial
 print("TRACE: About to import ESMFold (This will trigger OpenFold and DeepSpeed initialization)...", flush=True)
 from esm.esmfold.v1.esmfold import ESMFold
 
-# 2. End Trace
-print("TRACE: All imports completed successfully!", flush=True)
-
+print("TRACE: About to import deepspeed...", flush=True)
 try:
     import deepspeed
     if not hasattr(deepspeed.utils, "is_initialized"):
@@ -29,6 +27,9 @@ try:
         deepspeed.utils.is_initialized = lambda: False
 except (ImportError, AttributeError):
     pass
+
+# 2. End Trace
+print("TRACE: All imports completed successfully!", flush=True)
 
 ESM2_BACKBONE_PATH = "/home/jflucier/links/scratch/programs/esm/esm2_t36_3B_UR50D.pt"
 TRUNK_WEIGHTS_PATH = "/home/jflucier/links/scratch/programs/esm/esmfold_3B_v1.pt"
