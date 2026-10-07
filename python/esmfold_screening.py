@@ -34,13 +34,31 @@ print("TRACE: All imports completed successfully!", flush=True)
 ESM2_BACKBONE_PATH = "/home/jflucier/links/scratch/programs/esm/esm2_t36_3B_UR50D.pt"
 TRUNK_WEIGHTS_PATH = "/home/jflucier/links/scratch/programs/esm/esmfold_3B_v1.pt"
 
+
 def clean_sequence(seq):
-    """Removes non-standard amino acids that crash ESMFold"""
-    allowed = set(string.ascii_uppercase) - set("BJOUXZ")
-    return "".join([c for c in seq.upper() if c in allowed])
+    """
+    Cleans sequence formatting instantly without loops.
+    Preserves structural lengths and allowed ESM-2 vocabulary.
+    """
+    if not seq:
+        return ""
+
+    # 1. Strip trailing FASTA asterisks (*), whitespace, and force uppercase
+    seq = str(seq).upper().replace("*", "").strip()
+
+    # 2. Define the exact set of valid ESM-2 structural tokens
+    vocab_allowed = set("ACDEFGHIKLMNPQRSTVWYXBUZO")
+
+    # 3. Fast list comprehension translation (instant string compilation)
+    return "".join(c if c in vocab_allowed else "X" for c in seq)
 
 
 def main():
+    # Force print statements to write to the Slurm log file immediately
+    import functools
+    global print
+    print = functools.partial(print, flush=True)
+    
     # Set up command-line arguments
     parser = argparse.ArgumentParser(description="Run 1-vs-All ESMFold cofolding screening on Rorqual.")
     parser.add_argument("--bait", type=str, required=True, help="Amino acid sequence of the bait protein.")
@@ -55,10 +73,13 @@ def main():
     args = parser.parse_args()
 
     # Process inputs
+    print("cleaning sequence...")
     bait_seq = clean_sequence(args.bait)
+    print("retriving fasta and outdir...")
     fasta_path = args.fasta
     output_dir = args.outdir
 
+    print("making outdir...")
     os.makedirs(output_dir, exist_ok=True)
 
     print("Loading ESMFold on H100 GPU...")
