@@ -5,7 +5,6 @@
 #SBATCH --output=/home/jflucier/links/scratch/20260825_folds_arabidopsis/arabidopsis_openprot_bins_500aa_v2/logs/esm_bins_%A_%a.out
 #SBATCH --mem=31G
 #SBATCH --gpus=a100_3g.20gb:1
-#SBATCH --time=16:00:00
 
 ########
 # To submit use the following call:
