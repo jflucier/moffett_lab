@@ -1,7 +1,7 @@
 import os
 import argparse
 from Bio import SeqIO
-from Bio.SeqIO.FastaIO import SimpleFastaParser
+
 
 def main():
     # Set up command-line arguments
@@ -31,15 +31,12 @@ def main():
         return
 
     failed_records = []
-    with open(args.fasta_in, "r") as handle:
-        for record in SimpleFastaParser(handle):
-            header_id = record[0]
-    # for record in SeqIO.parse(args.fasta_in, "fasta"):
-    #     # Match how ESMFold names files based on the first chunk of the header before a pipe
-    #     header_id = record.id.split('|')[0]
+    for record in SeqIO.parse(args.fasta_in, "fasta"):
+        # Match how ESMFold names files based on the first chunk of the header before a pipe
+        header_id = record.id.split(' ')[0]
 
-            if header_id not in successful_folds:
-                failed_records.append(record)
+        if header_id not in successful_folds:
+            failed_records.append(record)
 
     # 3. Write out the failed sequences
     total_failed = len(failed_records)
