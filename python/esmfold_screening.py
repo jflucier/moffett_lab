@@ -131,7 +131,7 @@ def main():
             target_seq = clean_sequence(record[1])
 
             # Extract first word of the header as the unique filename token (e.g., AT1G01010)
-            target_id = header_line.split()[0].replace("|", "_").replace("/", "_")
+            target_id = header_line.split('|')[0].replace("|", "_").replace("/", "_")
 
             # Filter out empty entries or excessive sequence lengths (>1200 total residues can trigger OOMs)
             # if not target_seq or (len(bait_seq) + len(target_seq) > 1200):
