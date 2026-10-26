@@ -7,7 +7,6 @@
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=64G
 #SBATCH --output=logs/screen_%j.out
-#SBATCH --error=logs/screen_%j.err
 
 # --- Default Fallback Parameters ---
 INPUT_DIR=""
