@@ -4,8 +4,8 @@
 #SBATCH --time=00:30:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=32
-#SBATCH --mem=64G
+#SBATCH --cpus-per-task=24
+#SBATCH --mem=32G
 #SBATCH --output=logs/screen_%j.out
 
 # --- Default Fallback Parameters ---
