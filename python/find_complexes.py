@@ -5,7 +5,6 @@ import numpy as np
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from Bio.PDB import PDBParser
 
-# Optional: try importing tqdm for an interactive progress bar
 try:
     from tqdm import tqdm
 
@@ -14,21 +13,20 @@ except ImportError:
     HAS_TQDM = False
 
 
-def process_single_pdb(pdb_path, distance_threshold, min_contacts):
-    """Worker function executed across multiple CPU processes."""
+def process_single_pdb(pdb_path, distance_threshold, min_density_pct):
+    """Worker function calculating Interface Density per PDB file."""
     filename = os.path.basename(pdb_path)
     try:
-        # Create a fresh parser instance per process to avoid race conditions
         pdb_parser = PDBParser(QUIET=True)
         structure = pdb_parser.get_structure("complex", pdb_path)
-        model = structure[0]
+        model = structure
 
         chains = list(model.get_chains())
         if len(chains) < 2:
             return None
 
-        chain_A = chains[0]  # Bait
-        chain_B = chains[1]  # Target
+        chain_A = chains[0]  # Bait protein
+        chain_B = chains[1]  # Target protein from Arabidopsis proteome
 
         # Extract CA coordinates
         coords_A = [atom.get_coord() for atom in chain_A.get_atoms() if atom.get_name() == "CA"]
@@ -37,48 +35,48 @@ def process_single_pdb(pdb_path, distance_threshold, min_contacts):
         if not coords_A or not coords_B:
             return None
 
+        bait_length = len(coords_A)
         a_arr = np.array(coords_A)
         b_arr = np.array(coords_B)
 
-        # Matrix broadcasting to compute all pairwise physical distances
+        # Calculate full distance matrix
         distances = np.linalg.norm(a_arr[:, np.newaxis, :] - b_arr[np.newaxis, :, :], axis=2)
-        contact_count = np.sum(distances < distance_threshold)
 
-        if contact_count >= min_contacts:
-            return (filename, int(contact_count))
+        # STRATEGY 3 LOGIC:
+        # Find which specific residues in Chain A (Bait) have AT LEAST ONE contact within distance_threshold
+        # distances < distance_threshold creates a boolean matrix (Bait_Residues x Target_Residues)
+        # axis=1 checks across the target residues for each bait residue
+        interacting_bait_residues = np.any(distances < distance_threshold, axis=1)
+        contacting_bait_count = np.sum(interacting_bait_residues)
+
+        # Calculate what percentage of the bait is covered by the target interface
+        interface_density = (contacting_bait_count / bait_length) * 100.0
+
+        if interface_density >= min_density_pct:
+            return (filename, round(interface_density, 2), int(contacting_bait_count))
 
     except Exception as e:
-        # Log to structural error log if required, or skip broken/interrupted PDB files safely
         return ("ERROR", f"Error parsing {filename}: {str(e)}")
 
     return None
 
 
 def main():
-    parser = argparse.ArgumentParser(description="High-throughput parallelized screening for ESMFold multimer PDBs.")
+    parser = argparse.ArgumentParser(description="Strategy 3: Interface Packing Density Complex Screener.")
 
-    parser.add_argument("-i", "--input_dir",
-                        default="arabidopsis_openprot_bins_500aa_v2/bin_1001-1500aa_split_chunks/esmfold_results",
+    parser.add_argument("-i", "--input_dir", required=True,
                         help="Path to the directory containing ESMFold .pdb files")
-    parser.add_argument("-o", "--output",
-                        default="successful_complexes.txt",
+    parser.add_argument("-o", "--output", required=True,
                         help="Path to save the output tab-separated results file")
-    parser.add_argument("-d", "--distance",
-                        type=float,
-                        default=5.0,
-                        help="Distance threshold in Angstroms to consider an atom-atom contact (default: 5.0)")
-    parser.add_argument("-c", "--min_contacts",
-                        type=int,
-                        default=10,
-                        help="Minimum unique CA-CA contacts required to classify as a complex (default: 10)")
-    parser.add_argument("-w", "--workers",
-                        type=int,
-                        default=24,
-                        help="Number of parallel CPU processes to spawn. (Default: Auto-detects all available cores)")
+    parser.add_argument("-d", "--distance", type=float, default=4.5,
+                        help="Distance threshold in Angstroms for structural contact (default: 4.5Å)")
+    parser.add_argument("-p", "--min_density", type=float, default=10.0,
+                        help="Minimum % of Bait residues that must touch the target to pass (default: 10.0%)")
+    parser.add_argument("-w", "--workers", type=int, default=None,
+                        help="Number of parallel CPU processes. (Default: Auto-detects all cores)")
 
     args = parser.parse_args()
 
-    # Locate targets
     pdb_files = glob.glob(os.path.join(args.input_dir, "*.pdb"))
     total_files = len(pdb_files)
 
@@ -86,26 +84,23 @@ def main():
         print(f"Error: No .pdb files found in {args.input_dir}")
         return
 
-    print(f"Found {total_files:,} PDB files to screen.")
-    print(f"Spawning worker pool... (Workers: {args.workers if args.workers else 'All available cores'})")
+    print(
+        f"Found {total_files:,} structures. Filtering with Interface Density >= {args.min_density}% at {args.distance}Å...")
 
     hits = []
     errors = []
 
-    # Execute structural parsing concurrently across individual system processes
     with ProcessPoolExecutor(max_workers=args.workers) as executor:
-        # Map each future object to track processing chunks
         future_to_pdb = {
-            executor.submit(process_single_pdb, path, args.distance, args.min_contacts): path
+            executor.submit(process_single_pdb, path, args.distance, args.min_density): path
             for path in pdb_files
         }
 
-        # Setup real-time pipeline monitoring
         if HAS_TQDM:
-            progress_bar = tqdm(as_completed(future_to_pdb), total=total_files, desc="Screening Proteome")
+            progress_bar = tqdm(as_completed(future_to_pdb), total=total_files, desc="Density Screening")
         else:
             progress_bar = as_completed(future_to_pdb)
-            print("Processing structures... (Install 'tqdm' for a live progress metric bar)")
+            print("Processing structures...")
 
         count = 0
         for future in progress_bar:
@@ -120,27 +115,17 @@ def main():
                 else:
                     hits.append(result)
 
-    # Sort structural data matches by highest structural density (highest unique contacts)
+    # Sort results by highest interface packing density (%)
     hits.sort(key=lambda x: x[1], reverse=True)
 
-    # Flush positive complexes directly to structural log
     with open(args.output, "w") as f:
-        f.write("PDB_File\tCA_Contacts\n")
-        for filename, contacts in hits:
-            f.write(f"{filename}\t{contacts}\n")
+        f.write("PDB_File\tInterface_Density_Pct\tBait_Contact_Residues\n")
+        for filename, density, contacts in hits:
+            f.write(f"{filename}\t{density}%\t{contacts}\n")
 
-    # Output analytical wrap-up matrix
     print(f"\n Screening Complete!")
-    print(f"Total Structures Processed: {total_files:,}")
-    print(f"Successful Hits Identified : {len(hits):,}")
-    print(f"Parsing Issues/Fails      : {len(errors):,}")
-    print(f"Results successfully written to: {args.output}")
-
-    if errors:
-        error_log = "screening_errors.log"
-        with open(error_log, "w") as ef:
-            ef.write("\n".join(errors))
-        print(f"Warning: Encounters {len(errors)} anomalies. Details dumped inside: {error_log}")
+    print(f"Total Processed: {total_files:,} | Hits: {len(hits):,} | Errors: {len(errors):,}")
+    print(f"Results saved to: {args.output}")
 
 
 if __name__ == "__main__":
