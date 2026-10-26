@@ -52,7 +52,7 @@ source ${ESM_PATH}/venv/bin/activate
 
 # 5. Execute the parallelized screening script
 # We pass $SLURM_CPUS_PER_TASK directly to tell the script how many parallel workers to open
-python find_complexes.py \
+python /home/jflucier/links/scratch/programs/moffett_lab/python/find_complexes.py \
     --input_dir $INPUT_DIR \
     --output $OUTPUT_FILE \
     --distance 5.0 \
