@@ -54,8 +54,6 @@ source ${ESM_PATH}/venv/bin/activate
 python /home/jflucier/links/scratch/programs/moffett_lab/python/find_complexes.py \
     --input_dir $INPUT_DIR \
     --output $OUTPUT_FILE \
-    --distance 5.0 \
-    --min_contacts 10 \
     --workers $SLURM_CPUS_PER_TASK
 
 echo "Slurm Job $SLURM_JOB_ID complete."
