@@ -9,23 +9,25 @@ def find_incomplete_jobs(input_dir, output_dir, resume_dir):
     if not os.path.exists(resume_dir):
         os.makedirs(resume_dir)
 
-    # 1. Recursively find all completed .cif files across subdirectories
+    # 1. Track which job subdirectories contain a .cif file at their root level
     completed_jobs = set()
     if os.path.exists(output_dir):
-        for root, dirs, files in os.walk(output_dir):
-            for fname in files:
-                if fname.endswith(".cif"):
-                    # Example: A0A0S2RR82_bait__bait_model.cif
-                    base_name = os.path.splitext(fname)[0]
+        for entry in os.scandir(output_dir):
+            if entry.is_dir():
+                # Scan ONLY the files directly inside outputs/JOB_NAME/ (no recursion)
+                has_cif = False
+                try:
+                    for f in os.scandir(entry.path):
+                        if f.is_file() and f.name.endswith(".cif"):
+                            has_cif = True
+                            break  # Found a top-level cif, move to next directory
+                except PermissionError:
+                    continue
 
-                    # Remove the '_model' suffix that AlphaFold 3 / AlphaFast appends
-                    if base_name.endswith("_model"):
-                        job_name = base_name[:-6]  # Strip '_model'
-                        completed_jobs.add(job_name)
-                    else:
-                        completed_jobs.add(base_name)
+                if has_cif:
+                    completed_jobs.add(entry.name)
 
-    print(f"Detected {len(completed_jobs)} completed structures/jobs in output subdirectories.")
+    print(f"Detected {len(completed_jobs)} completed job directories containing structural data at the root level.")
 
     # 2. Match against input JSONs
     failed_count = 0
@@ -43,7 +45,7 @@ def find_incomplete_jobs(input_dir, output_dir, resume_dir):
 
             job_name = data.get("name", "").strip()
 
-            # If the specific job name has not produced a matching _model.cif file, mark it to resume
+            # If the job folder doesn't have a top-level .cif, it's marked to resume
             if job_name not in completed_jobs:
                 shutil.copy(full_json_path, os.path.join(resume_dir, json_file))
                 failed_count += 1
@@ -59,7 +61,7 @@ def find_incomplete_jobs(input_dir, output_dir, resume_dir):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Filter AlphaFast JSON inputs by checking nested output folders for missing .cif outputs."
+        description="Filter AlphaFast JSON inputs by checking top-level job folders for .cif outputs."
     )
     parser.add_argument(
         "-i", "--input_dir",
@@ -69,7 +71,7 @@ def main():
     parser.add_argument(
         "-o", "--output_dir",
         required=True,
-        help="Path to the AlphaFast output directory containing subfolders with .cif files"
+        help="Path to the AlphaFast output directory containing job subfolders"
     )
     parser.add_argument(
         "-r", "--resume_dir",
