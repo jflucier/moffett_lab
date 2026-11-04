@@ -9,20 +9,23 @@ def find_incomplete_jobs(input_dir, output_dir, resume_dir):
     if not os.path.exists(resume_dir):
         os.makedirs(resume_dir)
 
-    # 1. Collect all completed PDB file prefixes
+    # 1. Recursively find all completed .cif files across subdirectories
     completed_jobs = set()
     if os.path.exists(output_dir):
-        for fname in os.listdir(output_dir):
-            if fname.endswith(".pdb"):
-                base_name = os.path.splitext(fname)[0]
-                completed_jobs.add(base_name)
-                # Strip out trailing seed numbers (e.g. "jobname_1" -> "jobname") if present
-                if "_" in base_name:
-                    parts = base_name.rsplit("_", 1)
-                    if parts[1].isdigit():
-                        completed_jobs.add(parts[0])
+        for root, dirs, files in os.walk(output_dir):
+            for fname in files:
+                if fname.endswith(".cif"):
+                    # Example: A0A0S2RR82_bait__bait_model.cif
+                    base_name = os.path.splitext(fname)[0]
 
-    print(f"Detected {len(completed_jobs)} completed structures/seeds in output folder.")
+                    # Remove the '_model' suffix that AlphaFold 3 / AlphaFast appends
+                    if base_name.endswith("_model"):
+                        job_name = base_name[:-6]  # Strip '_model'
+                        completed_jobs.add(job_name)
+                    else:
+                        completed_jobs.add(base_name)
+
+    print(f"Detected {len(completed_jobs)} completed structures/jobs in output subdirectories.")
 
     # 2. Match against input JSONs
     failed_count = 0
@@ -39,17 +42,9 @@ def find_incomplete_jobs(input_dir, output_dir, resume_dir):
                 data = json.load(f)
 
             job_name = data.get("name", "").strip()
-            seeds = data.get("modelSeeds", [1])
 
-            # Check if all targeted seeds actually generated their specific outputs
-            job_complete = True
-            for seed in seeds:
-                specific_seed_output = f"{job_name}_{seed}"
-                if specific_seed_output not in completed_jobs and job_name not in completed_jobs:
-                    job_complete = False
-                    break
-
-            if not job_complete:
+            # If the specific job name has not produced a matching _model.cif file, mark it to resume
+            if job_name not in completed_jobs:
                 shutil.copy(full_json_path, os.path.join(resume_dir, json_file))
                 failed_count += 1
 
@@ -64,7 +59,7 @@ def find_incomplete_jobs(input_dir, output_dir, resume_dir):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Filter AlphaFast JSON inputs by checking for missing PDB outputs to build a resume subset."
+        description="Filter AlphaFast JSON inputs by checking nested output folders for missing .cif outputs."
     )
     parser.add_argument(
         "-i", "--input_dir",
@@ -74,7 +69,7 @@ def main():
     parser.add_argument(
         "-o", "--output_dir",
         required=True,
-        help="Path to the AlphaFast output directory containing .pdb files"
+        help="Path to the AlphaFast output directory containing subfolders with .cif files"
     )
     parser.add_argument(
         "-r", "--resume_dir",
